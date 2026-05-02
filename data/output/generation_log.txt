@@ -1,0 +1,45 @@
+2026-03-26 23:16:10,193 | INFO | Notebook initialized for username=Tirex300
+2026-03-26 23:16:10,942 | INFO | Discovered 40 archive months
+2026-03-26 23:16:10,947 | INFO | Archive 2022-12 ready via cached with 50 games
+2026-03-26 23:16:10,950 | INFO | Archive 2023-01 ready via cached with 186 games
+2026-03-26 23:16:10,952 | INFO | Archive 2023-02 ready via cached with 197 games
+2026-03-26 23:16:10,955 | INFO | Archive 2023-03 ready via cached with 364 games
+2026-03-26 23:16:10,958 | INFO | Archive 2023-04 ready via cached with 361 games
+2026-03-26 23:16:10,961 | INFO | Archive 2023-05 ready via cached with 313 games
+2026-03-26 23:16:10,965 | INFO | Archive 2023-06 ready via cached with 333 games
+2026-03-26 23:16:10,967 | INFO | Archive 2023-07 ready via cached with 226 games
+2026-03-26 23:16:10,969 | INFO | Archive 2023-08 ready via cached with 215 games
+2026-03-26 23:16:10,971 | INFO | Archive 2023-09 ready via cached with 182 games
+2026-03-26 23:16:10,972 | INFO | Archive 2023-10 ready via cached with 63 games
+2026-03-26 23:16:10,973 | INFO | Archive 2023-11 ready via cached with 74 games
+2026-03-26 23:16:10,975 | INFO | Archive 2023-12 ready via cached with 233 games
+2026-03-26 23:16:10,978 | INFO | Archive 2024-01 ready via cached with 294 games
+2026-03-26 23:16:10,981 | INFO | Archive 2024-02 ready via cached with 253 games
+2026-03-26 23:16:10,982 | INFO | Archive 2024-03 ready via cached with 95 games
+2026-03-26 23:16:10,983 | INFO | Archive 2024-04 ready via cached with 59 games
+2026-03-26 23:16:10,984 | INFO | Archive 2024-05 ready via cached with 149 games
+2026-03-26 23:16:10,987 | INFO | Archive 2024-06 ready via cached with 257 games
+2026-03-26 23:16:10,990 | INFO | Archive 2024-07 ready via cached with 354 games
+2026-03-26 23:16:10,992 | INFO | Archive 2024-08 ready via cached with 210 games
+2026-03-26 23:16:10,995 | INFO | Archive 2024-09 ready via cached with 351 games
+2026-03-26 23:16:10,997 | INFO | Archive 2024-10 ready via cached with 220 games
+2026-03-26 23:16:10,999 | INFO | Archive 2024-11 ready via cached with 164 games
+2026-03-26 23:16:11,000 | INFO | Archive 2024-12 ready via cached with 70 games
+2026-03-26 23:16:11,001 | INFO | Archive 2025-01 ready via cached with 59 games
+2026-03-26 23:16:11,002 | INFO | Archive 2025-02 ready via cached with 56 games
+2026-03-26 23:16:11,006 | INFO | Archive 2025-03 ready via cached with 511 games
+2026-03-26 23:16:11,009 | INFO | Archive 2025-04 ready via cached with 316 games
+2026-03-26 23:16:11,010 | INFO | Archive 2025-05 ready via cached with 55 games
+2026-03-26 23:16:11,012 | INFO | Archive 2025-06 ready via cached with 157 games
+2026-03-26 23:16:11,013 | INFO | Archive 2025-07 ready via cached with 37 games
+2026-03-26 23:16:11,014 | INFO | Archive 2025-08 ready via cached with 59 games
+2026-03-26 23:16:11,017 | INFO | Archive 2025-09 ready via cached with 390 games
+2026-03-26 23:16:11,019 | INFO | Archive 2025-10 ready via cached with 164 games
+2026-03-26 23:16:11,023 | INFO | Archive 2025-11 ready via cached with 488 games
+2026-03-26 23:16:11,028 | INFO | Archive 2025-12 ready via cached with 506 games
+2026-03-26 23:16:11,031 | INFO | Archive 2026-01 ready via cached with 268 games
+2026-03-26 23:16:11,032 | INFO | Archive 2026-02 ready via cached with 143 games
+2026-03-26 23:16:11,036 | INFO | Archive 2026-03 ready via cached with 409 games
+2026-03-26 23:17:00,391 | WARNING | Skipping game fff3bd8a-bfba-11ee-8402-6cfe544c0428 because of game_without_plies
+2026-03-26 23:18:20,458 | WARNING | Skipping game ecd63f16-d419-11f0-9508-a0369feff220 because of game_without_plies
+2026-03-26 23:18:43,187 | INFO | Dataset generation complete: 660785 rows written

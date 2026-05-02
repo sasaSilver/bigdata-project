@@ -1,0 +1,10 @@
+**/.DS_Store
+
+# Keep logs out of the version.
+output/generation_log.txt
+
+# Don't keep archives.
+output/raw_archives/
+
+# Don't keep raw dataset in github.
+output/chess_moves_dataset.csv
