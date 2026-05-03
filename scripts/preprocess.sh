@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # insstall uv
-# pip install uv
+pip install uv
 
 # install dependencies
 uv sync
