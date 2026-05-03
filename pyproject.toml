@@ -1,0 +1,22 @@
+[project]
+name = "bigdata-project"
+version = "0.1.0"
+description = "BigData project"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.18.4",
+    "ipykernel>=7.2.0",
+    "psycopg2-binary>=2.9.12",
+    "pydantic>=2.13.3",
+    "pydantic-settings>=2.14.0",
+    "python-chess>=1.999",
+    "requests>=2.33.1",
+    "sqlalchemy>=2.0.49",
+    "tqdm>=4.67.3",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.12",
+]
