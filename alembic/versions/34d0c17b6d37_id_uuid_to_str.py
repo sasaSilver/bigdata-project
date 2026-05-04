@@ -25,7 +25,8 @@ def upgrade() -> None:
                existing_type=sa.UUID(),
                type_=sa.String(),
                existing_nullable=False,
-               existing_server_default=sa.text('gen_random_uuid()'))
+               existing_server_default=sa.text('gen_random_uuid()'),
+               postgresql_using='id::text')
     # ### end Alembic commands ###
 
 
