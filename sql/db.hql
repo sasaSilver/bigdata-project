@@ -236,7 +236,7 @@ SET hive.exec.dynamic.partition.mode=nonstrict;
 SET hive.exec.max.dynamic.partitions=1000;
 SET hive.exec.max.dynamic.partitions.pernode=100;
 
-INSERT OVERWRITE TABLE chess_moves_partitioned PARTITION(archive_month)
+INSERT OVERWRITE TABLE chess_moves PARTITION(archive_month)
 SELECT 
     id, game_uuid, game_url,
     game_year, game_month, game_end_timestamp, game_end_datetime_utc,
