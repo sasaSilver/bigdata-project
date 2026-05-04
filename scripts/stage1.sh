@@ -21,7 +21,7 @@ uv run python -m scripts.insert_data
 
 echo "[Stage 1] Importing the database into hdfs..."
 
-sqoop import-all-tables \
+sqoop import \
   --connect jdbc:postgresql://${PG__HOST}/${PG__DBNAME} \
   --username "$PG__USER" --password "$PG__PASSWORD" \
   --compression-codec=snappy --compress \
