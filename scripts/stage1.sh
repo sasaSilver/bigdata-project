@@ -20,6 +20,14 @@ echo "[Stage 1] Ingesting data into postgres..."
 uv run python -m scripts.insert_data
 
 echo "[Stage 1] Importing the database into hdfs..."
-sqoop import-all-tables --connect jdbc:postgresql://${PG__HOST}/${PG__DBNAME} --username "$PG__USER" --password "$PG__PASSWORD" --compression-codec=snappy --compress --as-avrodatafile --warehouse-dir=project/warehouse --m 1
+
+sqoop import-all-tables \
+  --connect jdbc:postgresql://${PG__HOST}/${PG__DBNAME} \
+  --username "$PG__USER" --password "$PG__PASSWORD" \
+  --compression-codec=snappy --compress \
+  --as-avrodatafile \
+  --warehouse-dir=project/warehouse \
+  --m 1 \
+  --map-column-java id=String
 
 echo "[Stage 1] Done!"
