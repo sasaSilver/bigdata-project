@@ -28,6 +28,7 @@ sqoop import \
   --as-avrodatafile \
   --warehouse-dir=project/warehouse \
   --m 1 \
+  --direct \
   --table chess_moves
 
 echo "[Stage 1] Moving Avro schemas..."
