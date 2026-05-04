@@ -1,0 +1,157 @@
+Chess Move-Level Dataset Description
+========================================
+
+1. Brief project overview
+This dataset was generated from the Chess.com public API for a Big Data / Spark final project. Each row represents one ply from one game, making the dataset suitable for large-scale sequence-to-tabular modeling.
+
+2. Source description
+Source account: Tirex300. Source system: Chess.com public archives API backed by monthly game archive endpoints.
+
+3. Data acquisition process from Chess.com API
+The pipeline first requests the player archives index, filters archive months to the configured year range, fetches each monthly archive with retries and backoff, caches raw JSON locally, and then parses each game PGN.
+
+4. Unit of observation
+One row equals exactly one ply (half-move) from one Chess.com game.
+
+5. Primary ML task
+Multiclass classification: predict the final game outcome from the current move state at a given ply.
+
+6. Target definition for final_result_class
+The target is standardized into exactly three classes: white_win, black_win, and draw. Games with missing or contradictory result signals are skipped.
+
+7. Feature list
+Metadata / identifier columns
+- game_uuid: Stable game identifier from the Chess.com payload. Used to uniquely identify one game across all plies.
+- game_url: Public Chess.com game URL for auditability and raw-record traceability.
+
+Modeling feature columns
+- archive_month: Archive partition in YYYY-MM format derived from the monthly archive endpoint URL.
+- game_year: UTC calendar year of the game end timestamp. Useful for temporal filtering and partitioning.
+- game_month: UTC calendar month of the game end timestamp. Useful for seasonality and partitioning.
+- game_end_timestamp: Unix timestamp in seconds for the game end time in UTC.
+- game_end_datetime_utc: ISO-8601 UTC timestamp string for the game end time.
+- rated: Whether the game was rated on Chess.com.
+- rules: Ruleset reported by Chess.com, such as standard chess.
+- time_class: Chess.com time bucket such as bullet, blitz, rapid, or daily.
+- time_control_raw: Original Chess.com time-control string exactly as reported by the API.
+- time_control_base_seconds: Parsed base time in seconds from the raw time-control string when available.
+- time_control_increment_seconds: Parsed increment in seconds from the raw time-control string when available.
+- eco_url: Opening reference URL from Chess.com when present.
+- eco_code: ECO opening classification code, such as C45 or B07, when available.
+- opening_name: Human-readable opening name extracted from the Chess.com ECO URL slug.
+- white_username: White player's Chess.com username as reported by the API.
+- black_username: Black player's Chess.com username as reported by the API.
+- white_rating: White player's rating at the time of the game.
+- black_rating: Black player's rating at the time of the game.
+- rating_diff: White rating minus black rating, giving a signed pre-game rating gap.
+- white_accuracy: Post-game white accuracy metric from Chess.com when available.
+- black_accuracy: Post-game black accuracy metric from Chess.com when available.
+- ply_index: 1-based ply number within the game. Every dataset row represents exactly one ply.
+- fullmove_number: Human-readable move number associated with the ply. White and black plies from the same turn share the same value.
+- side_to_move: Compact side-to-move indicator before the ply: w for white or b for black.
+- side_to_move_name: Readable side-to-move label before the ply: white or black.
+- san_move: Move in standard algebraic notation generated from the board state before the ply.
+- uci_move: Move in UCI notation for machine-friendly parsing.
+- is_capture: Boolean flag indicating whether the ply captures an opponent piece.
+- is_check: Boolean flag indicating whether the position after the ply places the opponent king in check.
+- is_checkmate: Boolean flag indicating whether the ply ends the game state in checkmate.
+- is_castling: Boolean flag indicating whether the ply is a castling move.
+- is_promotion: Boolean flag indicating whether the ply promotes a pawn.
+- promotion_piece: Name of the promoted piece when the ply is a promotion; null otherwise.
+- from_square: Origin square of the move in algebraic board coordinates.
+- to_square: Destination square of the move in algebraic board coordinates.
+- piece_moved: Piece type moved on this ply from a neutral perspective, such as pawn or knight.
+- board_fen_before: Full FEN string for the board state immediately before the ply.
+- board_fen_after: Full FEN string for the board state immediately after the ply.
+- active_color_before: Active color field from the pre-move FEN. This duplicates side_to_move in raw FEN-compatible form.
+- castling_rights_before: Castling-rights segment from the pre-move FEN, such as KQkq or -.
+- en_passant_square_before: En passant target square from the pre-move FEN, or - when not available.
+- halfmove_clock_before: Halfmove clock from the pre-move FEN, useful for draw-rule context.
+- fullmove_number_before: Fullmove counter from the pre-move FEN.
+- legal_moves_count_before: Number of legal moves available before the ply.
+- material_white_before: White material count before the ply using standard piece weights excluding kings.
+- material_black_before: Black material count before the ply using standard piece weights excluding kings.
+- material_diff_before: White material minus black material before the ply.
+- white_clock_seconds_after: White clock in seconds immediately after the ply when a PGN clock annotation is available.
+- black_clock_seconds_after: Black clock in seconds immediately after the ply when a PGN clock annotation is available.
+- clock_seconds_after_for_side_to_move: Clock in seconds after the ply for the player who just moved.
+- side_to_move_clock_before: Clock in seconds for the player about to move, reconstructed from sequential per-game clock state before the ply.
+- time_spent_on_move_seconds: Estimated seconds spent on the current move using reconstructed pre-move clock, post-move clock, and increment.
+- clock_remaining_pct: Fraction of starting base time still remaining for the mover before the ply.
+- avg_time_spent_per_move_so_far: Mean time spent on this player's previous moves in the same game, excluding the current move.
+- is_in_time_trouble_30s: Nullable flag indicating whether the mover had fewer than 30 seconds before the ply.
+- end_hour_utc: UTC hour when the game ended. This is a datetime-derived explanatory variable.
+- end_weekday_utc: UTC weekday name when the game ended. This is a datetime-derived explanatory variable.
+- white_pawns_before: Number of white pawn pieces on the board before the ply.
+- white_knights_before: Number of white knight pieces on the board before the ply.
+- white_bishops_before: Number of white bishop pieces on the board before the ply.
+- white_rooks_before: Number of white rook pieces on the board before the ply.
+- white_queens_before: Number of white queen pieces on the board before the ply.
+- black_pawns_before: Number of black pawn pieces on the board before the ply.
+- black_knights_before: Number of black knight pieces on the board before the ply.
+- black_bishops_before: Number of black bishop pieces on the board before the ply.
+- black_rooks_before: Number of black rook pieces on the board before the ply.
+- black_queens_before: Number of black queen pieces on the board before the ply.
+- white_doubled_pawns_before: Number of white pawns that sit on files containing at least two white pawns before the ply.
+- black_doubled_pawns_before: Number of black pawns that sit on files containing at least two black pawns before the ply.
+- doubled_pawns_diff_before: White doubled-pawn count minus black doubled-pawn count before the ply.
+- white_isolated_pawns_before: Number of white pawns with no supporting white pawn on an adjacent file before the ply.
+- black_isolated_pawns_before: Number of black pawns with no supporting black pawn on an adjacent file before the ply.
+- isolated_pawns_diff_before: White isolated-pawn count minus black isolated-pawn count before the ply.
+- white_passed_pawns_before: Number of white passed pawns before the ply, using same-file and adjacent-file blockers ahead of the pawn.
+- black_passed_pawns_before: Number of black passed pawns before the ply, using same-file and adjacent-file blockers ahead of the pawn.
+- passed_pawns_diff_before: White passed-pawn count minus black passed-pawn count before the ply.
+- white_pawn_shield_score_before: Friendly pawn-shield score in front of the white king before the ply, using king file and adjacent files over the next two ranks.
+- black_pawn_shield_score_before: Friendly pawn-shield score in front of the black king before the ply, using king file and adjacent files over the next two ranks.
+- pawn_shield_diff_before: White pawn-shield score minus black pawn-shield score before the ply.
+- white_king_tropism_before: Sum of enemy non-pawn piece closeness scores around the white king before the ply using Chebyshev distance.
+- black_king_tropism_before: Sum of enemy non-pawn piece closeness scores around the black king before the ply using Chebyshev distance.
+- king_tropism_diff_before: White king-tropism score minus black king-tropism score before the ply.
+- white_can_castle_kingside_before: Boolean flag indicating whether white still has kingside castling rights before the ply.
+- white_can_castle_queenside_before: Boolean flag indicating whether white still has queenside castling rights before the ply.
+- black_can_castle_kingside_before: Boolean flag indicating whether black still has kingside castling rights before the ply.
+- black_can_castle_queenside_before: Boolean flag indicating whether black still has queenside castling rights before the ply.
+- in_check_before: Boolean flag showing whether the side to move was already in check before making the ply.
+- is_opening_phase: Boolean flag derived from ply index and material heuristics to indicate an opening-phase position.
+- is_middlegame_phase: Boolean flag derived from board-state heuristics to indicate a middlegame position.
+- is_endgame_phase: Boolean flag derived from board-state heuristics to indicate an endgame position.
+- ply_bucket: Coarse ply-range bucket in blocks of ten plies for easy aggregation.
+- total_piece_count_before: Total number of pieces on the board before the ply, including kings.
+- non_pawn_material_white_before: White non-pawn material count before the ply using standard piece weights.
+- non_pawn_material_black_before: Black non-pawn material count before the ply using standard piece weights.
+- non_pawn_material_diff_before: White non-pawn material minus black non-pawn material before the ply.
+- bishops_pair_white_before: Boolean flag indicating whether white still has both bishops before the ply.
+- bishops_pair_black_before: Boolean flag indicating whether black still has both bishops before the ply.
+- side_to_move_rating: Rating of the player who is about to move.
+- opponent_rating: Rating of the player waiting to respond.
+- side_to_move_rating_diff: Side-to-move rating minus opponent rating.
+
+Audit-only columns
+- result_raw: Raw result signals combined from PGN and API fields for auditing only. Do not use as a training feature.
+- termination: Raw termination text from Chess.com, such as resignation or checkmate. Audit-only, not a modeling feature.
+
+Target columns
+- final_result_class: Multiclass target column with exactly three labels: white_win, black_win, or draw.
+- white_won_flag: Binary target flag equal to 1 when the final result is a white win.
+- black_won_flag: Binary target flag equal to 1 when the final result is a black win.
+- draw_flag: Binary target flag equal to 1 when the final result is a draw.
+
+8. Datetime note
+Datetime fields are included explicitly through game_end_timestamp, game_end_datetime_utc, end_hour_utc, and end_weekday_utc.
+
+9. Exact row count
+674594
+
+10. Exact file size
+589220705 bytes (589.22 MB)
+
+11. Dataset requirement checks
+- >= 500,000 rows: True
+- >= 500 MB: True
+- >= 6 explanatory variables: True
+- datetime present: True
+
+Feature vs target vs audit-only separation
+Modeling feature columns include the board-state, move-context, temporal, opening, time-control, and rating fields.
+Target columns are final_result_class, white_won_flag, black_won_flag, and draw_flag.
+Audit-only columns are result_raw and termination because they directly reveal the final outcome.

@@ -1,16 +1,14 @@
 #!/bin/bash
 
-# insstall uv
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
 # install dependencies
-echo "Installing dependencies..."
+echo "[Preprocess] Installing dependencies..."
+# install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
 uv sync
 
 # load environment variables
 export $(grep -v '^#' .env | xargs)
 
-echo "Dropping existing tables..."
-
+echo "[Preprocess] Dropping existing tables..."
 # drop existing tables
 .venv/bin/alembic downgrade base

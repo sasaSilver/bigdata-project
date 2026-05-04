@@ -1,7 +1,9 @@
 from enum import StrEnum
 
+
 class ResultClass(StrEnum):
     """Game outcome class - primary ML target"""
+
     WHITE_WIN = "white_win"
     BLACK_WIN = "black_win"
     DRAW = "draw"
@@ -9,6 +11,7 @@ class ResultClass(StrEnum):
 
 class TimeClass(StrEnum):
     """Chess.com time control categories"""
+
     BULLET = "bullet"
     BLITZ = "blitz"
     RAPID = "rapid"
@@ -17,12 +20,14 @@ class TimeClass(StrEnum):
 
 class SideToMove(StrEnum):
     """Side currently to move (human-readable)"""
+
     WHITE = "white"
     BLACK = "black"
 
 
 class PieceType(StrEnum):
     """Standard chess piece types"""
+
     PAWN = "pawn"
     KNIGHT = "knight"
     BISHOP = "bishop"
@@ -33,6 +38,7 @@ class PieceType(StrEnum):
 
 class PromotionPiece(StrEnum):
     """Possible promotion pieces"""
+
     QUEEN = "queen"
     ROOK = "rook"
     BISHOP = "bishop"
@@ -41,6 +47,7 @@ class PromotionPiece(StrEnum):
 
 class Weekday(StrEnum):
     """Day of week for game end time"""
+
     MONDAY = "Monday"
     TUESDAY = "Tuesday"
     WEDNESDAY = "Wednesday"

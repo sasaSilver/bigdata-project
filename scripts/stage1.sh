@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Create database schema
+echo "[Stage 1] Creating database schema..."
 .venv/bin/alembic upgrade head
 
-echo $PG__HOST
+echo "[Stage 1] Downloading the dataset..."
+gdown "1_TRU4n9Jcs-fSxSYb5tEbFcR9rfLO7rJ" -O data/chess_moves_dataset.csv
 
-# Load data into PostgreSQL
-psql -h $PG__HOST -U $PG__USER -d $PG__DBNAME \
-    -c "\COPY chess_moves FROM 'data/output/chess_moves_dataset.csv' CSV HEADER"
+echo "[Stage 1] Ingesting data into postgres..."
+uv run python -m scripts.insert_data
