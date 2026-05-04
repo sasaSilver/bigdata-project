@@ -273,7 +273,7 @@ SELECT
     avg_time_spent_per_move_so_far, is_in_time_trouble_30s,
     side_to_move_rating, opponent_rating, side_to_move_rating_diff,
     result_raw, termination, final_result_class,
-    white_won_flag, black_won_flag, draw_flag
+    white_won_flag, black_won_flag, draw_flag,
     archive_month
 FROM chess_moves_raw;
 
