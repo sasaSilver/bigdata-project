@@ -2,6 +2,14 @@
 
 source scripts/load_env.sh
 
+echo "[Stage 1] Dropping existing tables..."
+.venv/bin/alembic downgrade base
+
+echo "[Stage 1] Cleaning HDFS warehouse..."
+hdfs dfs -rm -r -skipTrash \
+    hdfs://${HDFS__WAREHOUSE_HOST}:${HDFS__WAREHOUSE_PORT}/user/${PG__USER}/project/warehouse
+
+
 echo "[Stage 1] Creating database schema..."
 .venv/bin/alembic upgrade head
 
@@ -17,7 +25,7 @@ else
 fi
 
 echo "[Stage 1] Ingesting data into postgres..."
-uv run python -m scripts.insert_data
+uv run python -m scripts.insert_data > output/postgres_results.txt
 
 echo "[Stage 1] Importing the database into hdfs..."
 
@@ -25,13 +33,13 @@ sqoop import \
   --connect jdbc:postgresql://${PG__HOST}/${PG__DBNAME} \
   --username "$PG__USER" --password "$PG__PASSWORD" \
   --compression-codec=snappy --compress \
-  --as-avrodatafile \
+  --as-parquetfile \
   --warehouse-dir=project/warehouse \
   --m 1 \
   --direct \
   --table chess_moves
 
-echo "[Stage 1] Moving Avro schemas..."
+echo "[Stage 1] Moving schemas..."
 
 hdfs dfs -mkdir -p project/warehouse/avsc
 hdfs dfs -put output/*.avsc project/warehouse/avsc

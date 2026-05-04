@@ -18,5 +18,12 @@ uv sync
 echo "[Preprocess] Dropping existing tables..."
 .venv/bin/alembic downgrade base
 
-echo "[Preprocess] Cleaning up HDFS warehouse..."
-hdfs dfs -rm -r -skipTrash hdfs://${HDFS__WAREHOUSE_HOST}:${HDFS__WAREHOUSE_PORT}/user/${PG__USER}/project/warehouse
+echo "[Preprocess] Cleaning HDFS warehouse..."
+hdfs dfs -rm -r -skipTrash \
+    hdfs://${HDFS__WAREHOUSE_HOST}:${HDFS__WAREHOUSE_PORT}/user/${PG__USER}/project/warehouse
+
+echo "[Preprocess] Cleaning Hive database..."
+beeline -u jdbc:hive2://${HIVE__HOST}:${HIVE__PORT} \
+    -n "$PG__USER" -p "$PG__PASSWORD" \
+    --hivevar dbname="$PG__DBNAME" \
+    -e "DROP DATABASE IF EXISTS ${PG__DBNAME} CASCADE;"
