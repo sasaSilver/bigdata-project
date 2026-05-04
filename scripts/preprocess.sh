@@ -12,4 +12,4 @@ echo "[Preprocess] Dropping existing tables..."
 .venv/bin/alembic downgrade base
 
 echo "[Preprocess] Cleaning up HDFS warehouse..."
-hdfs dfs -rm -r -skipTrash hdfs://${HDFS__WAREHOUSE_URI}:${HDFS__WAREHOUSE_PORT}/user/${PG__USER}/project/warehouse
+hdfs dfs -rm -r -skipTrash hdfs://${HDFS__WAREHOUSE_HOST}:${HDFS__WAREHOUSE_PORT}/user/${PG__USER}/project/warehouse
