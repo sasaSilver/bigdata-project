@@ -1,6 +1,4 @@
-import uuid
-
-from sqlalchemy import DateTime, String, BigInteger, text, Index, Enum
+from sqlalchemy import DateTime, String, BigInteger, Index, Enum
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 from .enums import (
@@ -25,9 +23,7 @@ class ChessMove(Base):
 
     __tablename__ = "chess_moves"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        primary_key=True, server_default=text("gen_random_uuid()")
-    )
+    id: Mapped[str] = mapped_column(primary_key=True)
 
     # ========================================
     # Metadata / identifier columns

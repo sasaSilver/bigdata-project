@@ -28,6 +28,6 @@ sqoop import-all-tables \
   --as-avrodatafile \
   --warehouse-dir=project/warehouse \
   --m 1 \
-  --map-column-java id=String
+  --table chess_moves
 
 echo "[Stage 1] Done!"
