@@ -37,5 +37,6 @@ def downgrade() -> None:
                existing_type=sa.String(),
                type_=sa.UUID(),
                existing_nullable=False,
-               existing_server_default=sa.text('gen_random_uuid()'))
+               existing_server_default=sa.text('gen_random_uuid()'),
+               postgresql_using='id::uuid')
     # ### end Alembic commands ###
