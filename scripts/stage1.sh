@@ -36,7 +36,6 @@ sqoop import \
   --as-parquetfile \
   --warehouse-dir=project/warehouse \
   --m 1 \
-  --direct \
   --table chess_moves
 
 echo "[Stage 1] Moving schemas..."

@@ -53,4 +53,4 @@ COPY chess_moves (
 """,
                     f,
                 )
-            cur.execute("SELECT * FROM emps LIMIT 2;")
+            cur.execute("SELECT * FROM chess_moves LIMIT 2;")
