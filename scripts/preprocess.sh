@@ -4,8 +4,15 @@ source scripts/load_env.sh
 
 # install dependencies
 echo "[Preprocess] Installing dependencies..."
+
 # install uv
-curl -LsSf https://astral.sh/uv/install.sh | sh
+if command -v uv &> /dev/null; then
+    echo "[Preprocess] uv installed. Skipping..."
+else
+    echo "[Preprocess] Downloadig uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
+
 uv sync
 
 echo "[Preprocess] Dropping existing tables..."
