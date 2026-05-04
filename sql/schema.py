@@ -23,7 +23,7 @@ class ChessMove(Base):
 
     __tablename__ = "chess_moves"
 
-    id: Mapped[str] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
 
     # ========================================
     # Metadata / identifier columns
