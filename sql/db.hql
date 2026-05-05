@@ -10,7 +10,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS chess_moves_raw (
     game_year INT,
     game_month INT,
     game_end_timestamp BIGINT,
-    game_end_datetime_utc TIMESTAMP WITH LOCAL TIME ZONE,
+    game_end_datetime_utc TIMESTAMP,
     rated BOOLEAN,
     rules STRING,
     time_class STRING,
