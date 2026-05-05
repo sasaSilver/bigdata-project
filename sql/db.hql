@@ -10,7 +10,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS chess_moves_raw (
     game_year INT,
     game_month INT,
     game_end_timestamp BIGINT,
-    game_end_datetime_utc STRING,
+    game_end_datetime_utc TIMESTAMP WITH TIME ZONE,
     rated BOOLEAN,
     rules STRING,
     time_class STRING,
@@ -123,7 +123,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS chess_moves (
     game_year INT,
     game_month INT,
     game_end_timestamp BIGINT,
-    game_end_datetime_utc STRING,
+    game_end_datetime_utc TIMESTAMP WITH TIME ZONE,
     rated BOOLEAN,
     rules STRING,
     time_class STRING,
@@ -228,7 +228,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS chess_moves (
 )
 PARTITIONED BY (archive_month STRING)
 STORED AS PARQUET
-LOCATION 'project/warehouse/chess_moves'
+LOCATION 'project/hive/warehouse/chess_moves'
 TBLPROPERTIES ('parquet.compression'='SNAPPY');
 
 SET hive.exec.dynamic.partition=true;
@@ -237,44 +237,8 @@ SET hive.exec.max.dynamic.partitions=1000;
 SET hive.exec.max.dynamic.partitions.pernode=100;
 
 INSERT OVERWRITE TABLE chess_moves PARTITION(archive_month)
-SELECT 
-    id, game_uuid, game_url,
-    game_year, game_month, game_end_timestamp, game_end_datetime_utc,
-    end_hour_utc, end_weekday_utc, rated, rules, time_class,
-    time_control_raw, time_control_base_seconds, time_control_increment_seconds,
-    eco_url, eco_code, opening_name, white_username, black_username,
-    white_rating, black_rating, rating_diff, white_accuracy, black_accuracy,
-    ply_index, fullmove_number, side_to_move, side_to_move_name,
-    san_move, uci_move, piece_moved, from_square, to_square,
-    is_capture, is_check, is_checkmate, is_castling, is_promotion,
-    promotion_piece, board_fen_before, board_fen_after, active_color_before,
-    castling_rights_before, en_passant_square_before, halfmove_clock_before,
-    fullmove_number_before, legal_moves_count_before, total_piece_count_before,
-    material_white_before, material_black_before, material_diff_before,
-    non_pawn_material_white_before, non_pawn_material_black_before,
-    non_pawn_material_diff_before, white_pawns_before, white_knights_before,
-    white_bishops_before, white_rooks_before, white_queens_before,
-    black_pawns_before, black_knights_before, black_bishops_before,
-    black_rooks_before, black_queens_before, white_doubled_pawns_before,
-    black_doubled_pawns_before, doubled_pawns_diff_before,
-    white_isolated_pawns_before, black_isolated_pawns_before,
-    isolated_pawns_diff_before, white_passed_pawns_before,
-    black_passed_pawns_before, passed_pawns_diff_before,
-    white_pawn_shield_score_before, black_pawn_shield_score_before,
-    pawn_shield_diff_before, white_king_tropism_before,
-    black_king_tropism_before, king_tropism_diff_before,
-    white_can_castle_kingside_before, white_can_castle_queenside_before,
-    black_can_castle_kingside_before, black_can_castle_queenside_before,
-    in_check_before, bishops_pair_white_before, bishops_pair_black_before,
-    is_opening_phase, is_middlegame_phase, is_endgame_phase, ply_bucket,
-    white_clock_seconds_after, black_clock_seconds_after,
-    clock_seconds_after_for_side_to_move, side_to_move_clock_before,
-    time_spent_on_move_seconds, clock_remaining_pct,
-    avg_time_spent_per_move_so_far, is_in_time_trouble_30s,
-    side_to_move_rating, opponent_rating, side_to_move_rating_diff,
-    result_raw, termination, final_result_class,
-    white_won_flag, black_won_flag, draw_flag,
-    archive_month
+SELECT
+    *
 FROM chess_moves_raw;
 
 SELECT * FROM chess_moves LIMIT 2;
