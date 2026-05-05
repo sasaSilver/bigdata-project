@@ -40,10 +40,6 @@ sqoop import \
 
 echo "[Stage 1] Moving schemas..."
 
-hdfs dfs -mkdir -p project/warehouse/avsc
-hdfs dfs -put output/*.avsc project/warehouse/avsc
-
-mv *.avsc output/
 mv *.java output/
 
 echo "[Stage 1] Done!"

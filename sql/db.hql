@@ -114,7 +114,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS chess_moves_raw (
     draw_flag INT
 )
 STORED AS PARQUET
-LOCATION 'project/warehouse/chess_moves_raw';
+LOCATION 'project/warehouse/chess_moves';
 
 CREATE EXTERNAL TABLE IF NOT EXISTS chess_moves (
     id INT,

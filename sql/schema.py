@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import DateTime, String, BigInteger, Index, Enum
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -40,7 +42,7 @@ class ChessMove(Base):
     game_year: Mapped[int | None] = mapped_column(index=True)
     game_month: Mapped[int | None]
     game_end_timestamp: Mapped[int | None] = mapped_column(BigInteger)  # Unix timestamp
-    game_end_datetime_utc: Mapped[DateTime | None] = mapped_column(
+    game_end_datetime_utc: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True)
     )  # Timezone-aware
     end_hour_utc: Mapped[int | None]
@@ -334,6 +336,5 @@ class ChessMove(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<ChessMove(game_uuid='{self.game_uuid}', ply_index={self.ply_index}, "
             f"side_to_move='{self.side_to_move}', result='{self.final_result_class}')>"
         )
