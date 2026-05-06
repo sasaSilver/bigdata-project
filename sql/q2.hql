@@ -13,16 +13,14 @@ CREATE EXTERNAL TABLE q2_results (
     black_win_pct DOUBLE,
     draw_pct DOUBLE
 )
-ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
-STORED AS TEXTFILE
-LOCATION 'project/hive/warehouse/q2';
+STORED AS PARQUET
+LOCATION 'project/hive/warehouse/q2'
+TBLPROPERTIES ('parquet.compression'='SNAPPY');
 
 INSERT OVERWRITE TABLE q2_results
 SELECT
     eco_code,
-    -- TEXTFILE delimiter is ',' and has no quoting; opening_name often contains
-    -- commas (e.g., "King's Indian Defense, Classical"). Replace to keep rows aligned.
-    regexp_replace(MAX(opening_name), ',', ';') AS opening_name,
+    MAX(opening_name) AS opening_name,
     COUNT(*) AS games,
     ROUND(AVG(white_won_flag) * 100, 2) AS white_win_pct,
     ROUND(AVG(black_won_flag) * 100, 2) AS black_win_pct,

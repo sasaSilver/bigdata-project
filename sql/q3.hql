@@ -12,9 +12,9 @@ CREATE EXTERNAL TABLE q3_results (
     draw_pct DOUBLE,
     black_win_pct DOUBLE
 )
-ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
-STORED AS TEXTFILE
-LOCATION 'project/hive/warehouse/q3';
+STORED AS PARQUET
+LOCATION 'project/hive/warehouse/q3'
+TBLPROPERTIES ('parquet.compression'='SNAPPY');
 
 INSERT OVERWRITE TABLE q3_results
 SELECT
