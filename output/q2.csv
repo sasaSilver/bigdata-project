@@ -1,0 +1,11 @@
+q2_results.eco_code,q2_results.opening_name,q2_results.games,q2_results.white_win_pct,q2_results.black_win_pct,q2_results.draw_pct
+B22,Alapin Sicilian Defense...6.cxd4 Nc6 7.Nc3 Nxc3 8.bxc3,214,51.87,40.65,7.48
+C50,Italian Game...6.Nc3 Be7 7.O O O O,278,48.92,44.6,6.47
+A01,Nimzowitsch Larsen Attack Symmetrical Variation 2.Bb2 Bb7 3.Nf3,235,47.23,48.51,4.26
+B00,Owens Defense...4.Nf3 d6 5.O O Nd7,211,46.92,46.45,6.64
+A00,Ware Opening,876,46.69,46.92,6.39
+B01,Scandinavian Defense Modern Variation 3.d4 Qxd5,333,45.65,46.55,7.81
+A04,Reti Opening Ware Defense,325,45.23,46.77,8.0
+B07,Pirc Defense...6.O O Bg7 7.h3 O O,1756,44.82,50.63,4.56
+A41,Queens Pawn Opening...4.Nf3 Nf6 5.O O O O 6.c4,599,42.9,51.25,5.84
+B08,Pirc Defense Classical Variation...6.Qd2 c6 7.Bh6 b5,539,41.37,53.06,5.57

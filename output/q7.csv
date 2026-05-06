@@ -1,0 +1,9 @@
+q7_results.termination,q7_results.games,q7_results.white_win_pct,q7_results.black_win_pct,q7_results.draw_pct
+Tirex300 won on time,1704,48.12,51.88,0.0
+Tirex300 won by resignation,1554,49.55,50.45,0.0
+Tirex300 won by checkmate,1121,52.27,47.73,0.0
+Tirex300 won - game abandoned,155,50.97,49.03,0.0
+Game drawn by timeout vs insufficient material,139,0.0,0.0,100.0
+Game drawn by repetition,126,0.0,0.0,100.0
+Game drawn by stalemate,109,0.0,0.0,100.0
+Game drawn by insufficient material,84,0.0,0.0,100.0
