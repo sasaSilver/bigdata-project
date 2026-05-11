@@ -35,5 +35,5 @@ COPY phase_metrics (
 """,
                     f,
                 )
-            cur.execute("SELECT * FROM ml_meytrics LIMIT 2;")
+            cur.execute("SELECT * FROM model_metrics LIMIT 2;")
             cur.execute("SELECT * FROM phase_metrics LIMIT 2;")
