@@ -17,7 +17,7 @@ class Base(DeclarativeBase): ...
 
 
 class MLMetric(Base):
-    __tablename__ = "ml_metrics"
+    __tablename__ = "model_metrics"
 
     model: Mapped[str] = mapped_column(String(50))
     accuracy: Mapped[float]
