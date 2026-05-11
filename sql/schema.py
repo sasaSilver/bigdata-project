@@ -23,6 +23,15 @@ class MLMetric(Base):
     accuracy: Mapped[float]
     f1: Mapped[float]
 
+class PhaseMetrics(Base):
+    __tablename__ = "phase_metrics"
+
+    model: Mapped[str] = mapped_column(String(50), primary_key=True)
+    phase: Mapped[str] = mapped_column(String(50))
+    accuracy: Mapped[float]
+    f1: Mapped[float]
+    n_samples: Mapped[int]
+
 
 class ChessMove(Base):
     """Chess move-level dataset table for BigData/Spark final project.

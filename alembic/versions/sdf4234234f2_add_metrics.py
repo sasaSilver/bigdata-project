@@ -29,7 +29,18 @@ def upgrade() -> None:
         if_not_exists=True,
     )
 
+    op.create_table(
+        "phase_metrics",
+        sa.Column("model", sa.String(length=50), primary_key=True),
+        sa.Column("phase", sa.String(length=50)),
+        sa.Column("accuracy", sa.Float()),
+        sa.Column("f1", sa.Float()),
+        sa.Column("n_samples", sa.Integer()),
+        if_not_exists=True,
+    )
+
 
 def downgrade() -> None:
     """Downgrade schema."""
     op.drop_table("ml_metrics", if_exists=True)
+    op.drop_table("phase_metrics", if_exists=True)

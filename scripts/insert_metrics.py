@@ -17,10 +17,23 @@ COPY ml_metrics (
     FORMAT CSV,
     HEADER,
     DELIMITER ',',
-    NULL '',
-    FORCE_NULL (promotion_piece)
+    NULL ''
+)
+""",
+                    f,
+                )
+            with open("output/phase_metrics.csv", "r", encoding="utf-8") as f:
+                cur.copy_expert("""
+COPY phase_metrics (
+    model, phase, accuracy, f1, n_samples
+) FROM STDIN WITH (
+    FORMAT CSV,
+    HEADER,
+    DELIMITER ',',
+    NULL ''
 )
 """,
                     f,
                 )
             cur.execute("SELECT * FROM ml_meytrics LIMIT 2;")
+            cur.execute("SELECT * FROM phase_metrics LIMIT 2;")
