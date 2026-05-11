@@ -16,6 +16,14 @@ from .enums import (
 class Base(DeclarativeBase): ...
 
 
+class MLMetric(Base):
+    __tablename__ = "ml_metrics"
+
+    model: Mapped[str] = mapped_column(String(50), primary_key=True)
+    accuracy: Mapped[float]
+    f1: Mapped[float]
+
+
 class ChessMove(Base):
     """Chess move-level dataset table for BigData/Spark final project.
 
