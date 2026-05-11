@@ -19,6 +19,7 @@ class Base(DeclarativeBase): ...
 class MLMetric(Base):
     __tablename__ = "model_metrics"
 
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     model: Mapped[str] = mapped_column(String(50))
     accuracy: Mapped[float]
     f1: Mapped[float]
@@ -26,6 +27,7 @@ class MLMetric(Base):
 class PhaseMetrics(Base):
     __tablename__ = "phase_metrics"
 
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     model: Mapped[str] = mapped_column(String(50))
     phase: Mapped[str] = mapped_column(String(50))
     accuracy: Mapped[float]
