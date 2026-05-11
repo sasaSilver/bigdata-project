@@ -22,7 +22,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Upgrade schema."""
     op.create_table(
-        "chess_moves",
+        "model_metrics",
         sa.Column("model", sa.String(length=50), primary_key=True),
         sa.Column("accuracy", sa.Float()),
         sa.Column("f1", sa.Float()),
