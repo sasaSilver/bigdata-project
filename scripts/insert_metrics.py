@@ -11,7 +11,7 @@ if __name__ == "__main__":
         with conn.cursor() as cur:
             with open("output/model_metrics.csv", "r", encoding="utf-8") as f:
                 cur.copy_expert("""
-COPY ml_metrics (
+COPY model_metrics (
     model, accuracy, f1
 ) FROM STDIN WITH (
     FORMAT CSV,
