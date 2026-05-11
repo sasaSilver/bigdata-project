@@ -23,7 +23,7 @@ def upgrade() -> None:
     """Upgrade schema."""
     op.create_table(
         "model_metrics",
-        sa.Column("model", sa.String(length=50), primary_key=True),
+        sa.Column("model", sa.String(length=50)),
         sa.Column("accuracy", sa.Float()),
         sa.Column("f1", sa.Float()),
         if_not_exists=True,
@@ -31,7 +31,7 @@ def upgrade() -> None:
 
     op.create_table(
         "phase_metrics",
-        sa.Column("model", sa.String(length=50), primary_key=True),
+        sa.Column("model", sa.String(length=50)),
         sa.Column("phase", sa.String(length=50)),
         sa.Column("accuracy", sa.Float()),
         sa.Column("f1", sa.Float()),
