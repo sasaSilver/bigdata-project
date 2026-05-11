@@ -42,5 +42,5 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_table("ml_metrics", if_exists=True)
+    op.drop_table("model_metrics", if_exists=True)
     op.drop_table("phase_metrics", if_exists=True)
