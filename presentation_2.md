@@ -33,7 +33,7 @@ board state + game context at a selected ply
         -> white_win | black_win | draw
 ```
 
-The project covers the full path from raw Chess.com archives to distributed storage, EDA, dashboard, and a reserved ML section.
+The project covers the full path from raw Chess.com archives to distributed storage, EDA, dashboard, and Spark ML evaluation.
 
 ---
 
@@ -86,7 +86,7 @@ HDFS / Parquet / Snappy
         |
 Hive warehouse
         |
-EDA + Superset + Spark ML template
+EDA + Superset + Spark ML metrics
 ```
 
 This is the core Big Data part of the project.
@@ -111,7 +111,7 @@ The denormalized ply-level table is easier for Spark and Hive scans.
 
 ---
 
-## 6. EDA Deliverables
+## 6. EDA and Dashboard
 
 Stage II produces eight HiveQL insights.
 
@@ -126,41 +126,39 @@ Stage II produces eight HiveQL insights.
 | `q7` | outcome by termination type |
 | `q8` | material advantage vs outcome |
 
-Game-level insights use `ply_index = 1` to avoid over-weighting long games.
+CSV outputs feed Superset charts and dashboard interpretation. Game-level insights use `ply_index = 1` to avoid over-weighting long games.
 
 ---
 
-## 7. Dashboard
-
-Apache Superset is the presentation layer.
-
-Each insight has:
-
-- Hive result table
-- exported CSV artifact
-- chart in Superset
-- dashboard-level interpretation
-
-The dashboard focuses on ratings, openings, time controls, material advantage, game phase, and temporal trends.
-
----
-
-## 8. ML Template
+## 7. ML Results
 
 <div class="note">
-The current report does not contain final ML results yet. This slide is a placeholder for the Spark MLlib part once model training and evaluation are complete.
+The ML metrics are now available in the pipeline artifacts: `output/model_metrics.csv` and `output/phase_metrics.csv`.
 </div>
 
-Planned setup:
+Task: multiclass classification of `final_result_class`.
 
-| Item | Plan |
-| --- | --- |
-| Task | multiclass classification |
-| Target | `final_result_class` |
-| Split | train/test by `game_uuid` |
-| Models | Random Forest, SVM / One-vs-Rest, Naive Bayes |
-| Metrics | accuracy, weighted F1, confusion matrix |
-| Baseline | majority class on train split |
+| Model | Accuracy | Weighted F1 |
+| --- | ---: | ---: |
+| Naive Bayes | 0.679 | 0.654 |
+| Logistic Regression | 0.684 | 0.660 |
+| Random Forest | **0.706** | **0.681** |
+
+Random Forest is the strongest overall model.
+
+---
+
+## 8. ML by Game Phase
+
+Best model by phase:
+
+| Phase | Best model | Samples | Accuracy | Weighted F1 |
+| --- | --- | ---: | ---: | ---: |
+| Opening | Random Forest | 50,968 | 0.688 | 0.674 |
+| Middlegame | Random Forest | 92,383 | 0.715 | 0.678 |
+| Endgame | Random Forest | 48,051 | **0.762** | **0.713** |
+
+The model performs best in the endgame, where board-state features carry stronger outcome signal.
 
 ---
 
@@ -172,6 +170,6 @@ What is ready now:
 2. The project implements PostgreSQL -> Sqoop -> HDFS -> Hive.
 3. Hive storage uses Parquet, Snappy, partitioning, and bucketing.
 4. Eight EDA queries support the Superset dashboard.
-5. The ML section has a clean template and should be filled after Spark MLlib results are available.
+5. Spark ML metrics are available; Random Forest reaches 0.706 accuracy and 0.681 weighted F1 overall.
 
-This version is short enough for a defense talk and leaves room for the future ML slide update.
+This version is short enough for a defense talk and now includes the ML results.
