@@ -1,7 +1,7 @@
 """add metrics
 
 Revision ID: sdf4234234f2
-Revises:
+Revises: bc6557f717de
 Create Date: 2026-05-11 15:45:39.664731
 
 """
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "sdf4234234f2"
-down_revision: Union[str, Sequence[str], None] = None
+down_revision: Union[str, Sequence[str], None] = "bc6557f717de"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
