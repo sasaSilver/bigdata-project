@@ -1,0 +1,551 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\geometry{margin=1in}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!10}
+}
+
+\title{\textbf{Predicting Final Chess Game Outcomes \\ from Move-Level Board States}}
+\author{
+Ivan Chabanov -- Data Engineer \\
+Alexander Mikhailov -- Data Scientist \\
+Danil Eramasov -- Technical Writer \\
+Bulat Fakhrutdinov -- ML Specialist
+}
+\date{Big Data Course -- IU \\ 2026}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\tableofcontents
+\newpage
+
+% ---------------------------------------------------------
+\section{Introduction}
+
+The rapid growth of digital platforms has generated massive volumes of structured and semi-structured data requiring scalable storage and processing solutions. Online chess platforms such as Chess.com produce millions of games monthly, each consisting of detailed move-by-move records enriched with contextual and player-related metadata.
+
+This project aims to design and implement an end-to-end big data pipeline capable of ingesting, storing, analyzing, and modeling large-scale chess game data. The pipeline integrates distributed storage (HDFS), relational databases (PostgreSQL), Hive-based warehousing, Spark-based distributed analytics, and interactive visualization via Apache Superset.
+
+The core analytical objective is to predict the final outcome of a chess game (White win, Black win, or Draw) using board state features and contextual information available at a given ply. This represents a multiclass classification problem executed in a distributed Spark environment.
+
+% ---------------------------------------------------------
+\section{Business Objectives}
+
+Although chess is a strategic board game, predictive modeling of game outcomes has significant analytical and practical implications:
+
+\begin{itemize}
+    \item Improving real-time win probability estimation.
+    \item Enhancing chess analytics platforms.
+    \item Supporting training and educational tools for players.
+    \item Identifying decisive positional patterns.
+    \item Studying the influence of rating gaps and time controls on game outcomes.
+\end{itemize}
+
+The primary objective of this project is:
+
+\begin{quote}
+To build a scalable distributed system that predicts the final outcome of a chess game using intermediate board-state features and contextual metadata.
+\end{quote}
+
+Secondary objectives include understanding how positional advantages, time pressure, and rating differences influence the final result of a game.
+
+% ---------------------------------------------------------
+\section{Data Description}
+
+The dataset consists of chess game records collected from Chess.com archives. The raw sequential PGN (Portable Game Notation) archives were transformed into a structured relational format suitable for distributed storage and analytics.
+
+Each observation corresponds either to:
+
+\begin{itemize}
+    \item A \textbf{game-level record} containing metadata (players, ratings, time control, result).
+    \item A \textbf{ply-level record} representing the board state at a specific move.
+\end{itemize}
+
+The dataset contains more than \textbf{660,000 plies} across thousands of games.
+
+\subsection{Feature Categories}
+
+The dataset includes the following types of features:
+
+\begin{itemize}
+    \item Player ratings (\texttt{white\_rating}, \texttt{black\_rating})
+    \item Rating gap
+    \item Time control class (blitz, rapid, classical, etc.)
+    \item ECO (Encyclopedia of Chess Openings) code
+    \item Archive month (datetime feature)
+    \item Material balance indicators
+    \item Pawn structure features
+    \item King safety indicators
+    \item Move number and game phase (opening, middlegame, endgame)
+    \item Termination type (checkmate, resignation, timeout, agreement)
+    \item Final result class (\textbf{target variable}: White win, Black win, Draw)
+\end{itemize}
+
+% ---------------------------------------------------------
+\section{Data Characteristics}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Property} & \textbf{Value} \\
+\midrule
+Number of plies & $>$ 660,000 \\
+Dataset size & $>$ 500 MB \\
+Number of features & $>$ 100 \\
+Target variable & \texttt{final\_result\_class} \\
+Task type & Multiclass Classification \\
+Datetime feature & \texttt{archive\_month} \\
+Geospatial feature & No \\
+Storage format & CSV $\rightarrow$ PostgreSQL $\rightarrow$ HDFS $\rightarrow$ Hive \\
+\bottomrule
+\end{tabular}
+\caption{Dataset characteristics}
+\end{table}
+
+The dataset satisfies all project requirements: it exceeds 500,000 records, contains more than six explanatory variables, includes a datetime feature, and supports large-scale distributed batch processing.
+
+% ---------------------------------------------------------
+\section{Architecture of the Data Pipeline}
+
+The project implements a full end-to-end big data pipeline consisting of four major stages.
+
+\subsection{Overview}
+
+The data flows through the following components:
+
+\begin{enumerate}
+    \item \textbf{Data Source:} Chess.com PGN archives
+    \item \textbf{Relational Database:} PostgreSQL
+    \item \textbf{Distributed Storage:} HDFS (Hadoop Distributed File System)
+    \item \textbf{Data Warehouse:} Apache Hive (columnar storage with compression)
+    \item \textbf{Processing Engine:} Apache Spark on YARN
+    \item \textbf{Visualization:} Apache Superset
+\end{enumerate}
+
+\subsection{Pipeline Flow Diagram}
+
+\begin{verbatim}
+Raw PGN --> PostgreSQL --> Sqoop --> HDFS --> Hive --> Spark MLlib
+                                                             --> Superset
+\end{verbatim}
+
+% ---------------------------------------------------------
+\section{Data Preparation}
+
+\subsection{ER Diagram}
+
+The relational model consists of the one primary table:
+
+\begin{itemize}
+    \item \texttt{chess\_moves} -- stores moves across all games
+\end{itemize}
+
+\subsection{Loading Data to PostgreSQL}
+
+The schema for the table was created using an autogenerated alembic migration to ensure declared types matched created ones.
+
+Data was loaded into PostgreSQL using the \texttt{scripts/load\_data.py} script.
+
+Ingestion logs and schema creation results are stored in:
+
+\begin{itemize}
+    \item \texttt{output/postgres\_results.txt}
+\end{itemize}
+
+% ---------------------------------------------------------
+\section{Stage I -- Data Ingestion}
+
+\subsection{Objectives}
+
+\begin{itemize}
+    \item Load structured chess data into a distributed relational database.
+    \item Use Sqoop to transfer data from PostgreSQL to HDFS.
+    \item Prepare data for Hive table creation.
+\end{itemize}
+
+\subsection{PostgreSQL Setup}
+
+Tables were created with appropriate schema, constraints, and indexes to support efficient querying.
+
+\subsection{Sqoop Import to HDFS}
+
+We first created a \texttt{table of chess\_moves\_raw} to import raw data from Postgres with the intention of optimizing it later and stored in PARQUET format. This format was chosen as its column-level format enables faster query performance, especially for our analytical and ML workflow. Besides, it didn't require maintaining an additional schema file.
+
+Apache Sqoop was used to import data from PostgreSQL into HDFS.
+
+The data is now stored in HDFS in compressed PARQUET format, ready for Hive integration.
+
+\subsection{Deliverables}
+
+\begin{itemize}
+    \item All tables built and loaded in PostgreSQL ✅
+    \item Data successfully imported to HDFS via Sqoop ✅
+    \item The table was optimized ✅
+\end{itemize}
+
+% ---------------------------------------------------------
+\section{Stage II -- Data Storage and Exploratory Data Analysis}
+
+\subsection{Creating Hive Tables}
+
+External Hive tables were created on top of the HDFS data imported via Sqoop.
+
+The main \texttt{chess\_moves} table was partitioned by \texttt{archive\_month}, and divided into 8 buckets by \texttt{game\_uuid} for optimizations. Partitioning by archived date made sense as many of the data insights could be co-related to the time a game was played. Logically, this division makes sense for a distributed storage, as older entries can be compressed to free storage.
+
+The \texttt{chess\_moves} table was populated from \texttt{chess\_moves\_raw} via an \texttt{INSERT OVERWRITE}.
+
+This ensures efficient storage and fast analytical queries using columnar compression.
+
+Logs of table creation are stored in \texttt{output/hive\_results.txt}.
+
+\subsection{Exploratory Data Analysis}
+
+Eight analytical insights were created using HiveQL queries executed on the Tez engine. Each query produces a CSV output and has its own Superset Chart
+  m
+
+% \begin{figure}[H]
+% \centering
+% \includegraphics[width=0.7\textwidth]{output/q1.jpg}
+% \caption{Game Outcomes by Time Control}
+% \end{figure}
+
+% ---------------------------------------------------------
+\subsubsection{Insight 1: White Win Percentage by Opening (ECO Code)}
+
+\textbf{Query:} \texttt{sql/q2.hql}  
+\textbf{Output:} \texttt{output/q2.csv}  
+\textbf{Chart:} Horizontal bar chart (top 15 openings)
+
+\textbf{Description:}
+
+This query shows the statistics of the games after the round openings.
+
+The analysis helps to determine which openings are more productive and which are less productive at the beginning of the game. The percentage of wins for white, black, draws and the total number of games is indicated.
+
+\textbf{Business Value:}
+
+Players and coaches can prioritize studying high-impact openings. Platforms can highlight popular and effective openings in training modules.
+
+% ---------------------------------------------------------
+\subsubsection{Insight 2: Effect of Rating Gap on Game Outcome}
+
+\textbf{Query:} \texttt{sql/q3.hql}  
+\textbf{Output:} \texttt{output/q3.csv}  
+\textbf{Chart:} Line chart (2 charts, 3 series: white win \%, draw \%, black win \%)
+
+\textbf{Description:}
+
+This 2 queries show how much the difference in rating affects the outcome of the games. GAP is calculated based on the rating difference (white - black). If the GAP is negative, then black is stronger than white, if the GAP is positive, then on the contrary.
+
+\textbf{Business Value:}
+
+This supports fair matchmaking and accurate Elo rating adjustments.
+
+% ---------------------------------------------------------
+\subsubsection{Insight 3: Average Game Length by Time Control}
+
+\textbf{Query:} \texttt{sql/q4.hql}  
+\textbf{Output:} \texttt{output/q4.csv}  
+\textbf{Chart:} Bar chart
+
+\textbf{Description:}
+
+This diagram shows the statistics of batches of different time modes.
+
+\textbf{Business Value:}
+
+The analysis helps to determine how different game modes were played. Bullet (1 min), blitz (5 min), rapid (10 min), daily (unlimited). The average number of moves, the minimum and maximum number.
+
+% ---------------------------------------------------------
+\subsubsection{Insight 4: Distribution of Checkmate Plies by Game Phase}
+
+\textbf{Query:} \texttt{sql/q5.hql}  
+\textbf{Output:} \texttt{output/q5.csv}  
+\textbf{Chart:} Pie chart
+
+\textbf{Description:}
+
+This query shows the number of games won in a given period of the game.
+
+\textbf{Business Value:}
+
+The analysis helps to determine how often the game ends in different periods of the game. We see that the game ends almost 2 times more often at the end than in the middle of the game, and 5 times more often than in the opening.
+
+% ---------------------------------------------------------
+\subsubsection{Insight 5: Outcome Trends Over Time (by Archive Month)}
+
+\textbf{Query:} \texttt{sql/q6.hql}  
+\textbf{Output:} \texttt{output/q6.csv}  
+\textbf{Chart:} Line chart
+
+\textbf{Description:}
+
+This insight tracks outcome distribution over time using the \texttt{archive\_month} datetime feature.
+
+\textbf{Business Value:}
+
+Confirms dataset stability and suitability for long-term modeling.
+
+% ---------------------------------------------------------
+\subsubsection{Insight 6: Material Advantage and White Win Probability}
+
+\textbf{Query:} \texttt{sql/q8.hql}  
+\textbf{Output:} \texttt{output/q8.csv}  
+\textbf{Chart:} Line chart
+
+\textbf{Description:}
+
+This query shows the chances of winning a game for white if they had an advantage by the middle of the game or if they were losing.
+
+\textbf{Business Value:}
+
+The analysis helps to determine how much the advantage of the pieces can affect the outcome of the game. Usually, the greater the advantage, the higher the chance of winning.
+
+% ---------------------------------------------------------
+\section{Stage III -- Predictive Data Analysis}
+
+\subsection{Objectives}
+
+\begin{itemize}
+    \item Build distributed machine learning models using Spark MLlib.
+    \item Predict game outcomes using ply-level features.
+    \item Optimize hyperparameters via grid search.
+    \item Evaluate models using accuracy and F1-score.
+\end{itemize}
+
+\subsection{Feature Extraction and Preprocessing}
+
+Features were extracted from the \texttt{plies} table and transformed using Spark DataFrame API:
+
+\begin{itemize}
+    \item Categorical encoding for \texttt{time\_class}, \texttt{eco\_code}, \texttt{phase}
+    \item Numerical scaling for \texttt{material\_balance}, \texttt{king\_safety}
+    \item Feature vectorization using \texttt{VectorAssembler}
+\end{itemize}
+
+\subsection{Train-Test Split}
+
+The dataset was split into:
+
+\begin{itemize}
+    \item 70\% training
+    \item 30\% testing
+\end{itemize}
+
+\subsection{Models}
+
+Three types of classifiers were trained:
+
+\subsubsection{Model 1: Random Forest}
+
+Hyperparameters tuned:
+
+\begin{itemize}
+    \item \texttt{numTrees}: [50, 100, 150]
+    \item \texttt{maxDepth}: [5, 10, 15]
+    \item \texttt{minInstancesPerNode}: [1, 5, 10]
+\end{itemize}
+
+Total combinations: 27
+
+\subsubsection{Model 2: Support Vector Machine (SVM)}
+
+Hyperparameters tuned:
+
+\begin{itemize}
+    \item \texttt{regParam}: [0.01, 0.1, 1.0]
+    \item \texttt{maxIter}: [50, 100, 150]
+    \item \texttt{aggregationDepth}: [2, 3, 4]
+\end{itemize}
+
+\subsubsection{Model 3: Naive Bayes}
+
+Hyperparameters tuned:
+
+\begin{itemize}
+    \item \texttt{smoothing}: [0.5, 1.0, 1.5]
+    \item \texttt{modelType}: [multinomial, bernoulli, gaussian]
+    \item \texttt{threshold}: [0.3, 0.5, 0.7]
+\end{itemize}
+
+\subsection{k-Fold Cross Validation}
+
+k-fold cross-validation was performed with \textbf{k = 3}.
+
+\subsection{Evaluation Metrics}
+
+Since this is a multiclass classification task, the following metrics were computed:
+
+\begin{itemize}
+    \item \textbf{Accuracy}
+    \item \textbf{F1-score (weighted)}
+\end{itemize}
+
+\subsection{Best Model Selection}
+
+The best model of each type was selected based on cross-validation performance. Final evaluation was performed on the test set.
+
+\textbf{Results:}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcc}
+\toprule
+Model & Accuracy & F1-Score \\
+\midrule
+Random Forest & TBD & TBD \\
+SVM & TBD & TBD \\
+Naive Bayes & TBD & TBD \\
+\bottomrule
+\end{tabular}
+\caption{Model performance comparison}
+\end{table}
+
+\subsection{Prediction Example}
+
+A sample ply was selected, and the best model was used to predict the final outcome:
+
+\textbf{Input features:}
+
+\begin{itemize}
+    \item Material balance: +2
+    \item King safety: 4
+    \item Phase: middlegame
+    \item Time class: blitz
+\end{itemize}
+
+\textbf{Predicted outcome:} White win
+
+% ---------------------------------------------------------
+\section{Stage IV -- Data Presentation (Dashboard)}
+
+\subsection{Dashboard Description}
+
+A unified Apache Superset dashboard was created to present:
+
+\begin{itemize}
+    \item Dataset characteristics (number of games, plies, features)
+    \item All 8 EDA insights with charts
+    \item Model performance metrics
+    \item Example prediction
+\end{itemize}
+
+Each chart includes:
+
+\begin{itemize}
+    \item A descriptive title
+    \item Axis labels
+    \item Data storytelling interpretation
+\end{itemize}
+
+The dashboard is visually clean, uses consistent color schemes, and supports interactive filtering.
+
+% ---------------------------------------------------------
+\section{Findings and Conclusion}
+
+\subsection{Summary}
+
+This project successfully implemented an end-to-end big data pipeline for analyzing and predicting chess game outcomes. The pipeline integrated:
+
+\begin{itemize}
+    \item Distributed relational storage (PostgreSQL)
+    \item Scalable file storage (HDFS)
+    \item Columnar data warehousing (Hive with Parquet + Snappy)
+    \item Distributed analytics (Spark SQL and MLlib on YARN)
+    \item Interactive visualization (Apache Superset)
+\end{itemize}
+
+The exploratory data analysis revealed valuable insights into how time controls, openings, rating gaps, and material balance influence game outcomes.
+
+Three machine learning models were trained and optimized, demonstrating that distributed ML on Spark can effectively handle large-scale multiclass classification tasks.
+
+\subsection{Reflections on Own Work}
+
+The team successfully collaborated across roles:
+
+\begin{itemize}
+    \item Ivan Chabanov led the data engineering pipeline (PostgreSQL, Sqoop, HDFS).
+    \item Alexander Mikhailov performed exploratory analysis and designed queries.
+    \item Danil Eramasov documented the process and created storytelling narratives.
+    \item Bulat Fakhrutdinov implemented and tuned the ML models.
+\end{itemize}
+
+\subsection{Challenges and Difficulties}
+
+\begin{itemize}
+    \item \textbf{Data transformation:} Converting PGN archives into a relational schema required custom parsing logic.
+    \item \textbf{Sqoop configuration:} Tuning parallelism and compression settings for optimal performance.
+    \item \textbf{Hive query optimization:} Some queries required partitioning and bucketing for efficiency.
+    \item \textbf{Hyperparameter tuning:} Grid search on Spark required significant cluster resources.
+\end{itemize}
+
+\subsection{Recommendations}
+
+\begin{itemize}
+    \item Future work could incorporate additional features such as piece activity and pawn chains.
+    \item Time-series forecasting models could predict rating trends.
+    \item Deep learning models (e.g., neural networks) may improve classification performance.
+    \item Real-time streaming pipelines could support live game prediction.
+\end{itemize}
+
+% ---------------------------------------------------------
+\section{Contribution Table}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{p{3cm}cccccp{2cm}c}
+\toprule
+\textbf{Task} & \textbf{Ivan} & \textbf{Alex} & \textbf{Danil} & \textbf{Bulat} & \textbf{Deliverables} & \textbf{Avg Hours} \\
+\midrule
+Data extraction & 85\% & 5\% & 5\% & 5\% & CSV files & 3 \\
+\midrule
+PostgreSQL setup & 5\% & 85\% & 5\% & 5\% & postgres\_results.txt & 4 \\
+\midrule
+Sqoop import & 5\% & 85\% & 5\% & 5\% & HDFS datasets & 3 \\
+\midrule
+Hive tables & 5\% & 85\% & 5\% & 5\% & hive\_results.txt & 1 \\
+\midrule
+EDA queries & 85\% & 5\% & 5\% & 5\% & q1.csv--q8.csv & 3 \\
+\midrule
+Superset charts & 5\% & 30\% & 60\% & 5\% & Charts & 2 \\
+\midrule
+Feature engineering & 5\% & 5\% & 5\% & 85\% & feature vectors & 6 \\
+\midrule
+Model training & 5\% & 5\% & 5\% & 85\% & trained models & 10 \\
+\midrule
+Hyperparameter tuning & 5\% & 5\% & 5\% & 85\% & best models & 8 \\
+\midrule
+Dashboard creation & 5\% & 70\% & 20\% & 5\% & dashboard & 5 \\
+\midrule
+Report writing & 15\% & 20\% & 50\% & 15\% & report.pdf & 10 \\
+\midrule
+Presentation & 20\% & 10\% & 60\% & 10\% & slides.pdf & 4 \\
+\bottomrule
+\end{tabular}
+\caption{Team contribution table}
+\end{table}
+
+\end{document}
