@@ -125,7 +125,7 @@ Storage format & CSV $\rightarrow$ PostgreSQL $\rightarrow$ HDFS $\rightarrow$ H
 \end{table}
 
 The dataset satisfies all project requirements: it exceeds 500,000 records, contains more than six explanatory variables, includes a datetime feature, and supports large-scale distributed batch processing.
-
+\newpage
 % ---------------------------------------------------------
 \section{Architecture of the Data Pipeline}
 
@@ -232,6 +232,7 @@ Eight analytical insights were created using HiveQL queries executed on the Tez 
 % \end{figure}
 
 % ---------------------------------------------------------
+\newpage
 \subsubsection{Insight 1: White Win Percentage by Opening (ECO Code)}
 
 \textbf{Query:} \texttt{sql/q2.hql}  
@@ -287,12 +288,12 @@ The analysis helps to determine how different game modes were played. Bullet (1 
 
 \textbf{Description:}
 
-This query shows the number of games won in a given period of the game.
+This chart shows the number of piles of won game in a given period of the game.
 
 \textbf{Business Value:}
 
-The analysis helps to determine how often the game ends in different periods of the game. We see that the game ends almost 2 times more often at the end than in the middle of the game, and 5 times more often than in the opening.
-
+The analysis helps to determine on what ply-idnex on average each game phase ends. We see, that in endgame game usually ends on 100-th ply, 54-th ply in middlegame, 14-th ply in opening.
+\newpage
 % ---------------------------------------------------------
 \subsubsection{Insight 5: Outcome Trends Over Time (by Archive Month)}
 
@@ -363,21 +364,21 @@ Three types of classifiers were trained:
 Hyperparameters tuned:
 
 \begin{itemize}
-    \item \texttt{numTrees}: [50, 100, 150]
-    \item \texttt{maxDepth}: [5, 10, 15]
-    \item \texttt{minInstancesPerNode}: [1, 5, 10]
+    \item \texttt{numTrees}: [20, 40, 60]
+    \item \texttt{maxDepth}: [3, 6, 9]
+    \item \texttt{minInstancesPerNode}: [5, 10, 20]
 \end{itemize}
 
 Total combinations: 27
 
-\subsubsection{Model 2: Support Vector Machine (SVM)}
+\subsubsection{Model 2: Logistic regression}
 
 Hyperparameters tuned:
 
 \begin{itemize}
     \item \texttt{regParam}: [0.01, 0.1, 1.0]
-    \item \texttt{maxIter}: [50, 100, 150]
-    \item \texttt{aggregationDepth}: [2, 3, 4]
+    \item \texttt{elasticNetParam}: [0.0, 0.5, 1]
+    \item \texttt{tol}: [1e-4, 1e-3, 1e-2]
 \end{itemize}
 
 \subsubsection{Model 3: Naive Bayes}
@@ -385,9 +386,9 @@ Hyperparameters tuned:
 Hyperparameters tuned:
 
 \begin{itemize}
-    \item \texttt{smoothing}: [0.5, 1.0, 1.5]
+    \item \texttt{smoothing}: [0.5, 1.0, 2]
     \item \texttt{modelType}: [multinomial, bernoulli, gaussian]
-    \item \texttt{threshold}: [0.3, 0.5, 0.7]
+    \item \texttt{threshold}: [0, 0.5, 1]
 \end{itemize}
 
 \subsection{k-Fold Cross Validation}
@@ -415,9 +416,9 @@ The best model of each type was selected based on cross-validation performance. 
 \toprule
 Model & Accuracy & F1-Score \\
 \midrule
-Random Forest & TBD & TBD \\
-SVM & TBD & TBD \\
-Naive Bayes & TBD & TBD \\
+Random Forest & 0,70 & 0,68 \\
+Logistic regression & 0,68 & 0,66 \\
+Naive Bayes & 0,68 & 0,65 \\
 \bottomrule
 \end{tabular}
 \caption{Model performance comparison}
@@ -538,11 +539,11 @@ Model training & 5\% & 5\% & 5\% & 85\% & trained models & 10 \\
 \midrule
 Hyperparameter tuning & 5\% & 5\% & 5\% & 85\% & best models & 8 \\
 \midrule
-Dashboard creation & 5\% & 70\% & 20\% & 5\% & dashboard & 5 \\
+Dashboard creation & 5\% & 60\% & 30\% & 5\% & dashboard & 5 \\
 \midrule
 Report writing & 15\% & 20\% & 50\% & 15\% & report.pdf & 10 \\
 \midrule
-Presentation & 20\% & 10\% & 60\% & 10\% & slides.pdf & 4 \\
+Presentation & 20\% & 10\% & 60\% & 10\% & presentation2.pdf & 4 \\
 \bottomrule
 \end{tabular}
 \caption{Team contribution table}
