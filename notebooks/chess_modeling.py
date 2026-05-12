@@ -1,40 +1,49 @@
-# %%
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
+from pyspark.sql.types import BooleanType
+from pyspark.ml import Pipeline
+from pyspark.ml.feature import StringIndexer, OneHotEncoder, Imputer, VectorAssembler
+from pyspark.ml.classification import RandomForestClassifier
+from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
+from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+from pyspark.storagelevel import StorageLevel
+from pyspark.ml.classification import NaiveBayes
+from pyspark.ml.feature import Binarizer, VectorAssembler
+from pyspark.ml.classification import LogisticRegression
+from pyspark.ml.feature import StandardScaler
 
-PARQUET_PATH = "local_parquet/chess_moves_raw_parquet"
 
-spark = SparkSession.builder.getOrCreate()
-df = spark.read.parquet(PARQUET_PATH)
+# ------------------------------
+# 1. Spark Session
+# ------------------------------
+team = "team26"
+warehouse = f"project/hive/warehouse_{team}"
 
-df.printSchema()
-print("rows =", df.count())
-df.select("final_result_class").groupBy("final_result_class").count().show()
+spark = SparkSession.builder \
+    .appName("{} - spark ML".format(team)) \
+    .master("yarn") \
+    .config("hive.metastore.uris", "thrift://hadoop-02.uni.innopolis.ru:9883") \
+    .config("spark.sql.warehouse.dir", warehouse) \
+    .config("spark.sql.avro.compression.codec", "snappy") \
+    .enableHiveSupport() \
+    .getOrCreate()
 
-# %%
-def check_nulls(df):
-    null_stats = (
-        df.select([
-            F.count(F.when(F.col(c).isNull(), 1)).alias(c)
-            for c in df.columns
-        ])
-        .toPandas()
-        .T
-        .reset_index()
-    )
-    
-    null_stats.columns = ["column", "null_count"]
-    null_stats["null_pct"] = (null_stats["null_count"] / df.count()) * 100
-    
-    null_stats = null_stats[null_stats["null_count"] > 0].sort_values("null_pct", ascending=False)
-    
-    return null_stats
 
-check_nulls(df)
+print("spark.master =", spark.sparkContext.master)
+print("deployMode =", spark.conf.get("spark.submit.deployMode", "(none)"))
+print("applicationId =", spark.sparkContext.applicationId)
 
-# %%
-# filling in "avg_time_spent_per_move_so_far"
 
+# ------------------------------
+# 2. Load data
+# ------------------------------
+df = spark.table("team26_projectdb.chess_moves")
+print("Initial row count:", df.count())
+
+# ------------------------------
+# 3. Data preprocessing (imputation, feature engineering)
+# ------------------------------
+# filling avg_time_spent_per_move_so_far
 df = df.withColumn(
     "avg_time_spent_missing",
     F.col("avg_time_spent_per_move_so_far").isNull().cast("int")
@@ -54,25 +63,7 @@ df = (df.join(med, on="time_class", how="left")
         .drop("med_avg_time")
      )
 
-# %% [markdown]
-# Let's inspect *time_control_raw* values when *time_control_base_seconds* is Null
 
-# %%
-# find "time_control_raw" distribution when time_control_base_seconds is Null
-
-df.filter(F.col("time_control_base_seconds").isNull()) \
-  .select("time_control_raw","time_class","rated") \
-  .groupBy("time_control_raw","time_class").count().show(50, False)
-
-# %%
-df.groupBy("time_class").count().show()
-
-# %% [markdown]
-# > We see that values of format A/B (for instance **1/604800**) belong to daily group of *time_class* feature and their quantity is 435. Also notice number of rows with *time_class* = **daily** is 435. So we can conclude that *time_control_raw* values are following the format of A/B when *time_class* is **daily**.
-# 
-# > Remember that *time_control_base_seconds* and *time_control_increment_seconds* were parsed from *time_control_raw* feature. It's easy to guess that A is time increment (in seconds) and B is time limit (for example 604800 seconds are 7 days).
-
-# %%
 tc = F.trim(F.col("time_control_raw"))
 
 daily_slash_vals = ["1/86400", "1/604800"]
@@ -114,20 +105,7 @@ df = df.withColumn(
     ).otherwise(F.col("clock_remaining_pct"))
 )
 
-# %%
-check_nulls(df)
 
-# %% [markdown]
-# Let's also inspect values in *side_to_move_clock_before* and *is_in_time_trouble_30s*.
-
-# %%
-df.filter(F.col("side_to_move_clock_before").isNull()) \
-  .select("time_control_raw", "side_to_move_clock_before", "is_in_time_trouble_30s", "clock_remaining_pct", "time_class", "ply_index").show()
-
-# %% [markdown]
-# From this example, it becomes clear that side_to_move_clock_before must be filled with values of *time_control_base_seconds* because *ply_index* values indicate that these rows represent first move of opponents in the game. Also obvious that *is_in_time_trouble_30s* must be False for all these rows.
-
-# %%
 daily_slash = ["1/86400", "1/604800"]
 tc = F.trim(F.col("time_control_raw"))
 mask = tc.isin(daily_slash)
@@ -155,10 +133,10 @@ print("NULL side_to_move_clock_before (daily slash):",
 print("NULL is_in_time_trouble_30s (daily slash):",
       df.filter(mask & F.col("is_in_time_trouble_30s").isNull()).count())
 
-# %%
-check_nulls(df)
 
-# %%
+# ------------------------------
+# 4. Feature selection
+# ------------------------------
 features = [
     "game_uuid",
     "rated",
@@ -166,7 +144,6 @@ features = [
     "time_class",
     "time_control_base_seconds",
     "time_control_increment_seconds",
-    # "eco_code",
     "white_rating",
     "black_rating",
     "rating_diff",
@@ -178,11 +155,7 @@ features = [
     "is_checkmate",
     "is_castling",
     "is_promotion",
-    # "promotion_piece",
-    # "from_square",
-    # "to_square",
     "piece_moved",
-    # "en_passant_square_before",
     "halfmove_clock_before",
     "legal_moves_count_before",
     "material_white_before",
@@ -197,8 +170,6 @@ features = [
     "doubled_pawns_diff_before",
     "isolated_pawns_diff_before",
     "passed_pawns_diff_before",
-    "pawn_shield_diff_before",
-    "king_tropism_diff_before",
     "white_can_castle_kingside_before",
     "white_can_castle_queenside_before",
     "black_can_castle_kingside_before",
@@ -216,17 +187,7 @@ features = [
 
 df_subset = df.select(*features)
 
-# %%
-check_nulls(df_subset)
 
-# %%
-df_subset.printSchema()
-
-# %%
-df_subset.limit(10).toPandas()
-
-# %%
-from pyspark.sql.types import BooleanType
 
 label_col = "final_result_class"
 
@@ -240,7 +201,7 @@ print("cat_cols:", cat_cols, '\n')
 print("bool_cols:", bool_cols, '\n')
 print("num_cols count:", num_cols)
 
-# %%
+
 # Type conversion (booleans and numeric)
 for c in bool_cols:
     df_subset = df_subset.withColumn(c, F.col(c).cast("int").cast("double"))
@@ -248,10 +209,10 @@ for c in bool_cols:
 for c in num_cols:
     df_subset = df_subset.withColumn(c, F.col(c).cast("double"))
 
-# %%
-from pyspark.ml import Pipeline
-from pyspark.ml.feature import StringIndexer, OneHotEncoder, Imputer, VectorAssembler
 
+# ------------------------------
+# 5. Preprocessing pipeline
+# ------------------------------
 numeric_for_imputer = num_cols + bool_cols
 
 imputed_cols = [c + "_imp" for c in numeric_for_imputer]
@@ -292,247 +253,183 @@ final_assembler = VectorAssembler(
 
 preprocess = [label_indexer] + indexers + ohe + [imputer, numeric_assembler, final_assembler]
 
-# %%
+
+# ------------------------------
+# 6. Train-test split
+# ------------------------------
 SEED = 42
 
 games = df_subset.select("game_uuid").distinct().withColumn("r", F.rand(SEED))
 train_games = games.filter(F.col("r") < 0.7).select("game_uuid")
 test_games  = games.filter(F.col("r") >= 0.7).select("game_uuid")
 
-train_df = df_subset.join(train_games, "game_uuid", "inner")
-test_df  = df_subset.join(test_games,  "game_uuid", "inner")
-
-# %%
+train_df = df_subset.join(train_games, "game_uuid", "inner").drop("game_uuid")
+test_df  = df_subset.join(test_games,  "game_uuid", "inner").drop("game_uuid")
 print("Train rows:", train_df.count(), "Test rows:", test_df.count())
 
-# %% [markdown]
-# # Now it is time for Modeling!
 
-# %% [markdown]
-# * ### Model 1 - Random Forest
+# ------------------------------
+# 7. Prepare features
+# ------------------------------
+preprocess_pipeline = Pipeline(stages=preprocess)
+preprocess_model = preprocess_pipeline.fit(train_df)
+train_prepared = preprocess_model.transform(train_df).select("features", "label").persist(StorageLevel.MEMORY_AND_DISK)
+test_prepared = preprocess_model.transform(test_df).select("features", "label").persist(StorageLevel.MEMORY_AND_DISK)
+train_prepared.count()
+test_prepared.count()
 
-# %%
-from pyspark.ml.classification import RandomForestClassifier
-from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
-from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+# ------------------------------
+# 8. Evaluators
+# ------------------------------
+evaluator_acc = MulticlassClassificationEvaluator(
+    labelCol="label", predictionCol="prediction", metricName="accuracy"
+)
 
-# ===== 3) Random Forest + Grid Search (27 combinations) =====
+evaluator_f1 = MulticlassClassificationEvaluator(
+    labelCol="label", predictionCol="prediction", metricName="f1"
+)
+
+
+# ------------------------------
+# 9. Random Forest (Modeling)
+# ------------------------------
 rf = RandomForestClassifier(
     featuresCol="features",
     labelCol="label",
-    seed=SEED
+    seed=42,
+    featureSubsetStrategy="sqrt",
+    subsamplingRate=0.8,
+    maxBins=64
 )
 
 paramGrid_rf = (ParamGridBuilder()
-    .addGrid(rf.numTrees, [50, 100, 200])           # 3
-    .addGrid(rf.maxDepth, [5, 10, 20])             # 3
-    .addGrid(rf.minInstancesPerNode, [1, 2, 5])    # 3  => 27
+    .addGrid(rf.numTrees, [20, 40, 60])             # 3
+    .addGrid(rf.maxDepth, [3, 6, 9])              # 3
+    .addGrid(rf.minInstancesPerNode, [5, 10, 20]) # 3  => 27
     .build()
 )
 
-evaluator_acc = MulticlassClassificationEvaluator(
-    labelCol="label", predictionCol="prediction", metricName="accuracy"
-)
-evaluator_f1 = MulticlassClassificationEvaluator(
-    labelCol="label", predictionCol="prediction", metricName="f1"
-)
-
-# ---- best by Accuracy ----
-rf_pipeline = Pipeline(stages=preprocess + [rf])
-
-cv_acc = CrossValidator(
-    estimator=rf_pipeline,
+cv_rf = CrossValidator(
+    estimator=rf,
     estimatorParamMaps=paramGrid_rf,
     evaluator=evaluator_acc,
-    numFolds=3,     # 2<k<5
-    seed=SEED
-)
-
-cvModel_acc = cv_acc.fit(train_df)
-best_rf_acc_model = cvModel_acc.bestModel
-
-pred_acc = best_rf_acc_model.transform(test_df)
-acc_test = evaluator_acc.evaluate(pred_acc)
-f1_test  = evaluator_f1.evaluate(pred_acc)
-
-print("RF BEST by Accuracy -> TEST Accuracy:", acc_test, "TEST F1:", f1_test)
-print("Best RF params (by Accuracy):", best_rf_acc_model.stages[-1].extractParamMap())
-
-# ---- best by F1 ----
-cv_f1 = CrossValidator(
-    estimator=rf_pipeline,
-    estimatorParamMaps=paramGrid_rf,
-    evaluator=evaluator_f1,
     numFolds=3,
-    seed=SEED
-)
-
-cvModel_f1 = cv_f1.fit(train_df)
-best_rf_f1_model = cvModel_f1.bestModel
-
-pred_f1 = best_rf_f1_model.transform(test_df)
-acc_test2 = evaluator_acc.evaluate(pred_f1)
-f1_test2  = evaluator_f1.evaluate(pred_f1)
-
-print("RF BEST by F1 -> TEST Accuracy:", acc_test2, "TEST F1:", f1_test2)
-print("Best RF params (by F1):", best_rf_f1_model.stages[-1].extractParamMap())
-
-# %% [markdown]
-# * ### Model 2 - SVM (LinearSVC + OneVsRest)
-
-# %%
-from pyspark.ml.classification import LinearSVC, OneVsRest
-
-SEED = 42
-LABEL_COL = "final_result_class"
-
-evaluator_acc = MulticlassClassificationEvaluator(
-    labelCol="label", predictionCol="prediction", metricName="accuracy"
-)
-evaluator_f1 = MulticlassClassificationEvaluator(
-    labelCol="label", predictionCol="prediction", metricName="f1"
-)
-
-# Base classifier
-svm = LinearSVC(featuresCol="features", labelCol="label", seed=SEED)
-
-# Multiclass wrapper
-ovr = OneVsRest(classifier=svm)
-
-paramGrid_svm = (ParamGridBuilder()
-    .addGrid(svm.regParam, [0.001, 0.01, 0.1])     # 3
-    .addGrid(svm.maxIter, [20, 50, 100])         # 3
-    .addGrid(svm.tol, [1e-4, 1e-3, 1e-2])        # 3 => 27
-    .build()
-)
-
-svm_pipeline = Pipeline(stages=preprocess.getStages() + [ovr])
-
-# --- best by Accuracy ---
-cv_svm_acc = CrossValidator(
-    estimator=svm_pipeline,
-    estimatorParamMaps=paramGrid_svm,
-    evaluator=evaluator_acc,
-    numFolds=3,
-    seed=SEED,
+    seed=42,
     parallelism=1
 )
 
-cvModel_svm_acc = cv_svm_acc.fit(train_df)
-best_svm_acc_model = cvModel_svm_acc.bestModel
+cvModelRf = cv_rf.fit(train_prepared)
 
-pred_svm_acc = best_svm_acc_model.transform(test_df)
-acc_svm = evaluator_acc.evaluate(pred_svm_acc)
-f1_svm = evaluator_f1.evaluate(pred_svm_acc)
+best_rf_model = cvModelRf.bestModel
+pred_rf = best_rf_model.transform(test_prepared)
+acc_rf = evaluator_acc.evaluate(pred_rf)
+f1_rf = evaluator_f1.evaluate(pred_rf)
 
-print("SVM BEST by Accuracy -> TEST Accuracy:", acc_svm, "TEST F1:", f1_svm)
-print("Best SVM params (by Accuracy):", best_svm_acc_model.stages[-1].extractParamMap())
 
-# --- best by F1 ---
-cv_svm_f1 = CrossValidator(
-    estimator=svm_pipeline,
-    estimatorParamMaps=paramGrid_svm,
-    evaluator=evaluator_f1,
-    numFolds=3,
-    seed=SEED,
-    parallelism=1
+print("RF -> TEST acc:", acc_rf, "TEST f1:", f1_rf)
+print("Params:", best_rf_model.extractParamMap())
+
+
+# ------------------------------
+# 10. Naive Bayes (Modeling)
+# ------------------------------
+binarizer = Binarizer(
+    inputCol="features",
+    outputCol="features_bin",
+    threshold=0.0
 )
 
-cvModel_svm_f1 = cv_svm_f1.fit(train_df)
-best_svm_f1_model = cvModel_svm_f1.bestModel
-
-pred_svm_f1 = best_svm_f1_model.transform(test_df)
-acc_svm2 = evaluator_acc.evaluate(pred_svm_f1)
-f1_svm2 = evaluator_f1.evaluate(pred_svm_f1)
-
-print("SVM BEST by F1 -> TEST Accuracy:", acc_svm2, "TEST F1:", f1_svm2)
-print("Best SVM params (by F1):", best_svm_f1_model.stages[-1].extractParamMap())
-
-# %% [markdown]
-# * ### Model 3 - Naive Bayes (Multinomial) 
-
-# %%
-from pyspark.ml import Pipeline
-from pyspark.ml.classification import NaiveBayes
-from pyspark.ml.feature import MinMaxScaler, QuantileDiscretizer
-from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
-from pyspark.ml.evaluation import MulticlassClassificationEvaluator
-
-SEED = 42
-LABEL_COL = "final_result_class"
-
-evaluator_acc = MulticlassClassificationEvaluator(
-    labelCol="label", predictionCol="prediction", metricName="accuracy"
-)
-evaluator_f1 = MulticlassClassificationEvaluator(
-    labelCol="label", predictionCol="prediction", metricName="f1"
+nb = NaiveBayes(
+    featuresCol="features_bin",
+    labelCol="label",
+    predictionCol="prediction",
+    modelType="bernoulli"
 )
 
-# scaler -> discretizer -> NB
-scaler = MinMaxScaler(inputCol="features", outputCol="scaledFeatures")
+nb_pipeline = Pipeline(stages=[binarizer, nb])
 
-discretizer = QuantileDiscretizer(
-    inputCol="scaledFeatures",
-    outputCol="discFeatures",
-    handleInvalid="skip"
-)
 
-nb = NaiveBayes(featuresCol="discFeatures", labelCol="label", modelType="multinomial")
-
-# 27 комбинаций: 3 x 3 x 3
 paramGrid_nb = (ParamGridBuilder()
-    .addGrid(discretizer.numBuckets, [10, 20, 50])                 # 3
-    .addGrid(discretizer.relativeError, [0.01, 0.05, 0.1])      # 3
-    .addGrid(nb.smoothing, [0.0, 0.5, 1.0])                      # 3 => 27
-    .build()
-)
+    .addGrid(nb.smoothing, [0.5, 1.0, 2.0])    # 3
+    .addGrid(binarizer.threshold, [0.0, 0.5, 1.0])    # 3
+    .addGrid(nb.modelType, ["bernoulli", "multinomial", "gaussian"])    # 3 => 27
+    .build())
 
-nb_pipeline = Pipeline(stages=preprocess.getStages() + [scaler, discretizer, nb])
 
-# --- best by Accuracy ---
-cv_nb_acc = CrossValidator(
+cv_nb = CrossValidator(
     estimator=nb_pipeline,
     estimatorParamMaps=paramGrid_nb,
     evaluator=evaluator_acc,
     numFolds=3,
-    seed=SEED,
-    parallelism=1
+    parallelism=1,
+    seed=SEED
 )
 
-cvModel_nb_acc = cv_nb_acc.fit(train_df)
-best_nb_acc_model = cvModel_nb_acc.bestModel
+cvModelNb = cv_nb.fit(train_prepared)
+best_nb_model = cvModelNb.bestModel
 
-pred_nb_acc = best_nb_acc_model.transform(test_df)
-acc_nb = evaluator_acc.evaluate(pred_nb_acc)
-f1_nb = evaluator_f1.evaluate(pred_nb_acc)
+pred_nb = best_nb_model.transform(test_prepared)
+acc_nb = evaluator_acc.evaluate(pred_nb)
+f1_nb = evaluator_f1.evaluate(pred_nb)
 
-print("NB BEST by Accuracy -> TEST Accuracy:", acc_nb, "TEST F1:", f1_nb)
-print("Best NB params (by Accuracy):", best_nb_acc_model.stages[-1].extractParamMap())
 
-# --- best by F1 ---
-cv_nb_f1 = CrossValidator(
-    estimator=nb_pipeline,
-    estimatorParamMaps=paramGrid_nb,
-    evaluator=evaluator_f1,
+print("Naive Bayes -> TEST acc:", acc_nb, "TEST f1:", f1_nb)
+print("Params:", best_nb_model.extractParamMap())
+
+
+# ------------------------------
+# 11. Logistic Regression with scaler (Modeling)
+# ------------------------------
+spark.conf.set("spark.ml.crossValidator.parallelism", "1")
+
+
+scaler = StandardScaler(inputCol="features", outputCol="features_scaled", withMean=False, withStd=True)
+scaler_model = scaler.fit(train_prepared)
+train_scaled = scaler_model.transform(train_prepared).select("features_scaled", "label") \
+                     .persist(StorageLevel.MEMORY_AND_DISK)
+test_scaled = scaler_model.transform(test_prepared).select("features_scaled", "label") \
+                    .persist(StorageLevel.MEMORY_AND_DISK)
+train_scaled.count()
+test_scaled.count()
+
+lr = LogisticRegression(
+    featuresCol="features_scaled",
+    labelCol="label",
+    maxIter=50,
+    family="multinomial",
+    standardization=False
+)
+
+paramGrid_lr = (ParamGridBuilder()
+    .addGrid(lr.regParam, [0.01, 0.1, 1.0])          # 3
+    .addGrid(lr.elasticNetParam, [0.0, 0.5, 1.0])    # 3
+    .addGrid(lr.tol, [1e-4, 1e-3, 1e-2])            # 3 => 27
+    .build())
+
+
+cv_lr = CrossValidator(
+    estimator=lr,
+    estimatorParamMaps=paramGrid_lr,
+    evaluator=evaluator_acc,
     numFolds=3,
-    seed=SEED,
-    parallelism=1
+    parallelism=1,
+    seed=SEED
 )
 
-cvModel_nb_f1 = cv_nb_f1.fit(train_df)
-best_nb_f1_model = cvModel_nb_f1.bestModel
 
-pred_nb_f1 = best_nb_f1_model.transform(test_df)
-acc_nb2 = evaluator_acc.evaluate(pred_nb_f1)
-f1_nb2 = evaluator_f1.evaluate(pred_nb_f1)
+cvModelLr = cv_lr.fit(train_scaled)
+best_lr_model = cvModelLr.bestModel
 
-print("NB BEST by F1 -> TEST Accuracy:", acc_nb2, "TEST F1:", f1_nb2)
-print("Best NB params (by F1):", best_nb_f1_model.stages[-1].extractParamMap())
-
-# %%
-
-
-# %%
+pred_lr = best_lr_model.transform(test_scaled)
+acc_lr = evaluator_acc.evaluate(pred_lr)
+f1_lr = evaluator_f1.evaluate(pred_lr)
 
 
 
+print("Logistic Regression -> TEST acc:", acc_lr, "TEST f1:", f1_lr)
+print("Params:", best_lr_model.extractParamMap())
+
+train_prepared.unpersist()
+test_prepared.unpersist()
+train_scaled.unpersist()
+test_scaled.unpersist()
