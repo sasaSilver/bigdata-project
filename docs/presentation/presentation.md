@@ -171,5 +171,3 @@ What is ready now:
 3. Hive storage uses Parquet, Snappy, partitioning, and bucketing.
 4. Eight EDA queries support the Superset dashboard.
 5. Spark ML metrics are available; Random Forest reaches 0.706 accuracy and 0.681 weighted F1 overall.
-
-This version is short enough for a defense talk and now includes the ML results.
