@@ -1,4 +1,8 @@
-This repository is a template for the final project of big data course. It contains the following directories:
+!!Main report and presentation files are in `docs/` directory!!!
+
+---
+
+This repos!ry is a template for the final project of big data course. It contains the following directories:
 
 - `data/` contains the dataset files.
 - `models/` contains the Spark ML models.
