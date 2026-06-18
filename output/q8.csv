@@ -1,0 +1,8 @@
+q8_results.material_bucket,q8_results.games,q8_results.white_win_pct,q8_results.draw_pct,q8_results.black_win_pct
+white_down>=5,275,36.0,6.91,57.09
+white_down_2_4,1105,42.71,5.88,51.4
+white_down_1,1276,43.97,5.17,50.86
+equal,4906,47.13,5.44,47.43
+white_up_1,560,52.68,6.79,40.54
+white_up_2_4,370,59.73,5.41,34.86
+white_up>=5,128,65.63,8.59,25.78

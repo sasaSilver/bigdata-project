@@ -1,0 +1,12 @@
+q1_results.time_class,q1_results.final_result_class,q1_results.games
+blitz,black_win,1967
+blitz,draw,215
+blitz,white_win,1949
+bullet,black_win,1607
+bullet,draw,194
+bullet,white_win,1595
+daily,black_win,4
+daily,white_win,5
+rapid,black_win,619
+rapid,draw,95
+rapid,white_win,639

@@ -10,9 +10,9 @@ CREATE EXTERNAL TABLE q5_results (
     checkmate_plies BIGINT,
     avg_ply_index DOUBLE
 )
-ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
-STORED AS TEXTFILE
-LOCATION 'project/hive/warehouse/q5';
+STORED AS PARQUET
+LOCATION 'project/hive/warehouse/q5'
+TBLPROPERTIES ('parquet.compression'='SNAPPY');
 
 INSERT OVERWRITE TABLE q5_results
 SELECT

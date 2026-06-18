@@ -10,9 +10,9 @@ CREATE EXTERNAL TABLE q1_results (
     final_result_class STRING,
     games BIGINT
 )
-ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
-STORED AS TEXTFILE
-LOCATION 'project/hive/warehouse/q1';
+STORED AS PARQUET
+LOCATION 'project/hive/warehouse/q1'
+TBLPROPERTIES ('parquet.compression'='SNAPPY');
 
 INSERT OVERWRITE TABLE q1_results
 SELECT

@@ -1,0 +1,5 @@
+q4_results.time_class,q4_results.games,q4_results.avg_plies,q4_results.median_plies,q4_results.min_plies,q4_results.max_plies
+bullet,3396,76.51,73.91111111111111,1,208
+blitz,4131,73.3,66.11702127659575,2,266
+rapid,1353,72.24,65.55882352941177,1,232
+daily,9,48.33,43.0,2,113

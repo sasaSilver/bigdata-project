@@ -235,7 +235,13 @@ TBLPROPERTIES ('parquet.compression'='SNAPPY');
 SET hive.exec.dynamic.partition=true;
 SET hive.exec.dynamic.partition.mode=nonstrict;
 SET hive.enforce.bucketing=true;
-SET hive.optimize.sort.dynamic.partition=true;
+-- hive.optimize.sort.dynamic.partition MUST be false when combining dynamic
+-- partitioning with bucketing on Hive 3.x — otherwise multiple reducers race
+-- for the same bucket file (HIVE-19207-style FileAlreadyExistsException with
+-- "_tmp._bucket_number__bucket_number" doubled-prefix names).
+SET hive.optimize.sort.dynamic.partition=false;
+-- Ensure the writer spawns exactly bucket_count reducers per partition.
+SET mapreduce.job.reduces=8;
 
 INSERT OVERWRITE TABLE chess_moves PARTITION(archive_month)
 SELECT

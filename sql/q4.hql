@@ -13,9 +13,9 @@ CREATE EXTERNAL TABLE q4_results (
     min_plies INT,
     max_plies INT
 )
-ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
-STORED AS TEXTFILE
-LOCATION 'project/hive/warehouse/q4';
+STORED AS PARQUET
+LOCATION 'project/hive/warehouse/q4'
+TBLPROPERTIES ('parquet.compression'='SNAPPY');
 
 INSERT OVERWRITE TABLE q4_results
 SELECT
